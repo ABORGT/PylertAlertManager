@@ -32,7 +32,7 @@ class AlertManager(object):
 
         return self._req_obj
 
-    def _check_response(req):
+    def _check_response(self, req):
         """Helper to check that responses are what we expect."""
         if (req.status_code in requests.codes.ok
                 and req.json()['status'] in self.SUCCESS_STATUSES):
