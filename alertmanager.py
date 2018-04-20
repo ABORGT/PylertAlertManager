@@ -1,16 +1,20 @@
 from requests.compat import urljoin
+from requests import HTTPError
 import requests
 import logging
 import json
 import copy
 
+
 class AlertManager(object):
+
+    SUCCESS_STATUSES = ['success']
+    ERROR_STATUSES = ['error']
 
     def __init__(self, host, port=9093, req_obj=None):
         self.hostname = host
         self.port = port
         self._req_obj = req_obj
-
 
     @property
     def request_session(self):
@@ -28,45 +32,75 @@ class AlertManager(object):
 
         return self._req_obj
 
+    def _check_response(self, req):
+        """Helper to check that responses are what we expect."""
+        if (req.status_code in requests.codes.ok
+                and req.json()['status'] in self.SUCCESS_STATUSES):
+            return True
+        elif (req.status_code in requests.codes.ok
+                and req.json()['status'] in self.ERROR_STATUSES):
+            raise ValueError('{} ==> {}'.format(req.json()['errorType'],
+                             req.json()['error']))
+        else:
+            raise HTTPError('{} ==> {}'.format(req.status_code, req.text))
+
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
         r = self.request_session.request(method, route, **kwargs)
-
         return r
 
     def get_alerts(self):
-        # http://10.255.238.146:9093/api/v1/alerts
-        pass
+        route = "/api/v1/alerts"
+        r = self._make_request("GET", route)
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
-    def post_alerts(self):
+    def post_alerts(self, alert):
         # http://10.255.238.146:9093/api/v1/alerts
-        pass
+        route = "/api/v1/alerts"
+        r = self._make_request("POST", route, data=alert.jsonify())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_status(self):
-        # http://10.255.238.146:9093/api/v1/status
-        pass
+        route = "/api/v1/status"
+        r = self._make_request("GET", route)
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_receivers(self):
-        # http://10.255.238.146:9093/api/v1/receivers
-        pass
+        route = "/api/v1/receivers"
+        r = self._make_request("GET", route)
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_alert_groups(self):
-        # http://10.255.238.146:9093/api/v1/alerts/groups
-        pass
+        route = "/api/v1/groups"
+        r = self._make_request("GET", route)
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
-    def get_silence(self):
-        # http://10.255.238.146:9093/api/v1/silences
-        # http://10.255.238.146:9093/api/v1/silence/:id:
-        pass
+    def get_silence(self, id=None):
+        route = "/api/v1/silences"
+        if id:
+            route = urljoin(route, id)
+        r = self._make_request("GET", route)
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
-    def post_silence(self):
-        # http://10.255.238.146:9093/api/v1/silences
-        pass
+    def post_silence(self, alert):
+        route = "/api/v1/silences"
+        r = self._make_request("POST", route, data=alert.jsonify())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
-    def delete_silence(self):
-        # http://10.255.238.146:9093/api/v1/silence/:id:
-        pass
+    def delete_silence(self, silence_id):
+        route = "/api/v1/silence/"
+        route = urljoin(route, silence_id)
+        r = self._make_request("DELETE", route)
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
 
 class Alert(object):
@@ -101,7 +135,6 @@ class Alert(object):
     def alert_attributes(self):
         return self._raw.keys()
 
-
     @classmethod
     def from_dict(cls, data):
         try:
@@ -110,7 +143,6 @@ class Alert(object):
             pass
 
         return cls(dict_data=data)
-
 
     def _validate(self, data=None):
         # logic to check if the dictionary is good
@@ -129,31 +161,32 @@ class Alert(object):
 
         return json.dumps(self._raw)
 
+
 if __name__ == '__main__':
     test_data = {
-        "labels":{
-            "alertname":"TylerCTest2",
-            "dev":"test",
-            "instance":"its fake2",
-            "severity":"warning"
+        "labels": {
+            "alertname": "TylerCTest2",
+            "dev": "test",
+            "instance": "its fake2",
+            "severity": "warning"
         },
-        "annotations":{
-            "description":"Please don't break monitor wide this time",
-            "info":"Tyler coil did this",
-            "summary":"Please just ignore this alert"
+        "annotations": {
+            "description": "Please don't break monitor wide this time",
+            "info": "Tyler coil did this",
+            "summary": "Please just ignore this alert"
         },
-        "startsAt":"2018-04-18T11:22:44.44444444-05:00",
-        "endsAt":"2018-04-18T11:22:44.44444444-05:00",
-        "generatorURL":"",
-        "status":{
-            "state":"unprocessed",
-            "silencedBy":[],
-            "inhibitedBy":[]
+        "startsAt": "2018-04-18T11:22:44.44444444-05:00",
+        "endsAt": "2018-04-18T11:22:44.44444444-05:00",
+        "generatorURL": "",
+        "status": {
+            "state": "unprocessed",
+            "silencedBy": [],
+            "inhibitedBy": []
         },
-        "receivers":[
+        "receivers": [
             "slack-bottesting"
         ],
-        "fingerprint":"a88192ddf88700bd"
+        "fingerprint": "a88192ddf88700bd"
     }
     test = Alert.from_dict(test_data)
 
@@ -168,4 +201,3 @@ if __name__ == '__main__':
     test._raw = {'endsAt': 'I changed'}
 
     print(test.endsAt)
-
