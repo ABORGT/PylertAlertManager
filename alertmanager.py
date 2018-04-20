@@ -28,52 +28,71 @@ class AlertManager(object):
 
         return self._req_obj
 
+    # Just made this so that I could quickly finish this before i leave
+    def _check_response(response):
+        """Helper to check that responses are what we expect"""
+        if 'success' in r.json():
+            return True
+        else:
+            raise Exception('You did it wrong')
+
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
         r = self.request_session.request(method, route, **kwargs)
-
         return r
 
     def get_alerts(self):
         route = "/api/v1/alerts"
         r = self._make_request("GET", route)
-        return Alert.from_dict(r.json())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
-    def post_alerts(self):
+    def post_alerts(self, alert):
         # http://10.255.238.146:9093/api/v1/alerts
-        pass
+        route = "/api/v1/alerts"
+        r = self._make_request("POST", route, data=alert.jsonify())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_status(self):
         route = "/api/v1/status"
         r = self._make_request("GET", route)
-        return Alert.from_dict(r.json())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_receivers(self):
         route = "/api/v1/receivers"
         r = self._make_request("GET", route)
-        return Alert.from_dict(r.json())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_alert_groups(self):
         route = "/api/v1/groups"
         r = self._make_request("GET", route)
-        return Alert.from_dict(r.json())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def get_silence(self, id=None):
         route = "/api/v1/silences"
         if id:
             route = urljoin(route, id)
         r = self._make_request("GET", route)
-        return Alert.from_dict(r.json())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
-    def post_silence(self):
+    def post_silence(self, alert):
         # http://10.255.238.146:9093/api/v1/silences
-        pass
+        route = "/api/v1/silences"
+        r = self._make_request("POST", route, data=alert.jsonify())
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
     def delete_silence(self, id):
         route = "/api/v1/silence/{0}".format(id)
         r = self._make_request("DELETE", route)
-        return r.json()
+        if self._check_response(r):
+            return Alert.from_dict(r.json())
 
 
 class Alert(object):
