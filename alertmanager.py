@@ -1,4 +1,5 @@
 from requests.compat import urljoin
+from requests import HTTPError
 import requests
 import logging
 import json
@@ -6,6 +7,9 @@ import copy
 
 
 class AlertManager(object):
+
+    SUCCESS_STATUSES = ['success']
+    ERROR_STATUSES = ['error']
 
     def __init__(self, host, port=9093, req_obj=None):
         self.hostname = host
@@ -28,13 +32,17 @@ class AlertManager(object):
 
         return self._req_obj
 
-    # Just made this so that I could quickly finish this before i leave
-    def _check_response(response):
-        """Helper to check that responses are what we expect"""
-        if 'success' in r.json():
+    def _check_response(req):
+        """Helper to check that responses are what we expect."""
+        if (req.status_code in requests.codes.ok
+                and req.json()['status'] in self.SUCCESS_STATUSES):
             return True
+        elif (req.status_code in requests.codes.ok
+                and req.json()['status'] in self.ERROR_STATUSES):
+            raise ValueError('{} ==> {}'.format(req.json()['errorType'],
+                             req.json()['error']))
         else:
-            raise Exception('You did it wrong')
+            raise HTTPError('{} ==> {}'.format(req.status_code, req.text))
 
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
@@ -82,14 +90,14 @@ class AlertManager(object):
             return Alert.from_dict(r.json())
 
     def post_silence(self, alert):
-        # http://10.255.238.146:9093/api/v1/silences
         route = "/api/v1/silences"
         r = self._make_request("POST", route, data=alert.jsonify())
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
-    def delete_silence(self, id):
-        route = "/api/v1/silence/{0}".format(id)
+    def delete_silence(self, silence_id):
+        route = "/api/v1/silence/"
+        route = urljoin(route, silence_id)
         r = self._make_request("DELETE", route)
         if self._check_response(r):
             return Alert.from_dict(r.json())
