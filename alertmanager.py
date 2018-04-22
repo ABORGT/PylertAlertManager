@@ -1,5 +1,6 @@
 from requests.compat import urljoin
 from requests import HTTPError
+import collections
 import requests
 import logging
 import json
@@ -34,10 +35,10 @@ class AlertManager(object):
 
     def _check_response(self, req):
         """Helper to check that responses are what we expect."""
-        if (req.status_code in requests.codes.ok
+        if (req.status_code == requests.codes.ok
                 and req.json()['status'] in self.SUCCESS_STATUSES):
             return True
-        elif (req.status_code in requests.codes.ok
+        elif (req.status_code == requests.codes.ok
                 and req.json()['status'] in self.ERROR_STATUSES):
             raise ValueError('{} ==> {}'.format(req.json()['errorType'],
                              req.json()['error']))
@@ -47,6 +48,22 @@ class AlertManager(object):
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
+
+        # We want to make use of requests built in json, it just makese sense
+        # But, they currently are not willing to allow you to provide a custom
+        # json encoder, and we don't want to use all **kwargs[data] are json
+        # So lets make some pyfu
+        # https://github.com/requests/requests/issues/2755
+        # https://github.com/python/cpython/blob/master/Lib/json/encoder.py#L413-L438
+        if kwargs.get('json'):
+            kw_json = kwargs['json']
+            if isinstance(kw_json, collections.Iterable):
+                kw_json = [dict(i) for i in kw_json]
+            elif isinstance(kw_json, object):
+                kw_json = dict(kw_json)
+
+            kwargs['json'] = kw_json
+
         r = self.request_session.request(method, route, **kwargs)
         return r
 
@@ -56,10 +73,10 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
-    def post_alerts(self, alert):
+    def post_alerts(self, *alert):
         # http://10.255.238.146:9093/api/v1/alerts
         route = "/api/v1/alerts"
-        r = self._make_request("POST", route, data=alert.jsonify())
+        r = self._make_request("POST", route, json=alert)
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
@@ -89,9 +106,9 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
-    def post_silence(self, alert):
+    def post_silence(self, *alert):
         route = "/api/v1/silences"
-        r = self._make_request("POST", route, data=alert.jsonify())
+        r = self._make_request("POST", route, json=alert)
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
@@ -103,24 +120,24 @@ class AlertManager(object):
             return Alert.from_dict(r.json())
 
 
-class Alert(object):
+class Alert(collections.UserDict):
 
     def __init__(self, dict_data=None):
 
-        # __data_dict is the private dict that powers _raw getters and setters
+        # __data_dict is the private dict that powers data getters and setters
         self.__data_dict = {}
-        self._raw = dict_data
+        self.data = dict_data
 
         if not self._validate():
             logging.warning("This Alert object doesn't validate, feel free to "
                             "adjust but you will be blocked on POSTing")
 
     @property
-    def _raw(self):
+    def data(self):
         return self.__data_dict
 
-    @_raw.setter
-    def _raw(self, dict_data):
+    @data.setter
+    def data(self, dict_data):
         __local_data_dict = copy.deepcopy(self.__data_dict)
         __local_data_dict.update(dict_data)
         if not self._validate(__local_data_dict):
@@ -129,11 +146,11 @@ class Alert(object):
         else:
             self.__data_dict.update(dict_data)
             for key in self.alert_attributes:
-                setattr(self, key, self._raw[key])
+                setattr(self, key, self.data[key])
 
     @property
     def alert_attributes(self):
-        return self._raw.keys()
+        return self.data.keys()
 
     @classmethod
     def from_dict(cls, data):
@@ -146,20 +163,39 @@ class Alert(object):
 
     def _validate(self, data=None):
         # logic to check if the dictionary is good
-        # If data none, rely on self._raw, if data is there validate that data
+        # If data none, rely on self.data, if data is there validate that data
 
-        if self._raw == "invalid":
+        if self.data == "invalid":
             return False
 
         return True
 
-    def jsonify(self, force=False):
-        # Standardize how we convert this to Postable data... exception on
-        # validation, but allow overrides just in case
-        if not self._validate() and not force:
-            raise ValueError('Data dict is invalid')
+    def __setattr__(self, key, value, presynced=False):
+        super().__setattr__(key, value)
+        # This probably isn't efficient. But we're dealing with small amounts
+        # of data, maybe if we see large scale alert creation we may need to
+        # re-eval
+        # Userdict don't expect the dict to be managed by attributes, that
+        # is why we must implement this. Offer presynced because sometimes
+        # we may wanna bypass the extra OP
+        if self.data.get(key) and not presynced:
+            self.data[key] = value
 
-        return json.dumps(self._raw)
+    def __setitem__(self, key, value):
+        # This probably isn't efficient. But we're dealing with small amounts
+        # of data, maybe if we see large scale alert creation we may need to
+        # re-eval
+        try:
+            getattr(self, key)
+            # Send presynced, because this call already accurately updates
+            # the underlying dict because UserDict
+            self.__setattr__(key, value, presynced=True)
+        except AttributeError:
+            # not an Alert Attribute
+            pass
+
+        super().__setitem__(key, value)
+
 
 
 if __name__ == '__main__':
@@ -198,6 +234,6 @@ if __name__ == '__main__':
 
     # I don't like that this is the functionality to update an existing
     # alert... i have some ideas, but i wanna make you know i don't like it
-    test._raw = {'endsAt': 'I changed'}
+    test.data = {'endsAt': 'I changed'}
 
     print(test.endsAt)
