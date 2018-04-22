@@ -138,6 +138,9 @@ class Alert(collections.UserDict):
 
     @data.setter
     def data(self, dict_data):
+        if not dict_data:
+            return
+
         __local_data_dict = copy.deepcopy(self.__data_dict)
         __local_data_dict.update(dict_data)
         if not self._validate(__local_data_dict):
@@ -178,7 +181,7 @@ class Alert(collections.UserDict):
         # Userdict don't expect the dict to be managed by attributes, that
         # is why we must implement this. Offer presynced because sometimes
         # we may wanna bypass the extra OP
-        if self.data.get(key) and not presynced:
+        if not key.startswith('_') and key != 'data' and not presynced:
             self.data[key] = value
 
     def __setitem__(self, key, value):
