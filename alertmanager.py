@@ -51,22 +51,7 @@ class AlertManager(object):
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
-
-        # We want to make use of requests built in json, it just makese sense
-        # But, they currently are not willing to allow you to provide a custom
-        # json encoder, and we don't want to use all **kwargs[data] are json
-        # So lets make some pyfu
-        # https://github.com/requests/requests/issues/2755
-        # https://github.com/python/cpython/blob/master/Lib/json/encoder.py#L413-L438
-        if kwargs.get('json'):
-            kw_json = kwargs['json']
-            if isinstance(kw_json, collections.Iterable):
-                kw_json = [dict(i) for i in kw_json]
-            elif isinstance(kw_json, object):
-                kw_json = dict(kw_json)
-
-            kwargs['json'] = kw_json
-
+        
         r = self.request_session.request(method, route, **kwargs)
         return r
 
