@@ -51,7 +51,7 @@ class AlertManager(object):
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
-        
+
         r = self.request_session.request(method, route, **kwargs)
         return r
 
@@ -107,6 +107,7 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
+
 class Alert(Box):
 
     def __init__(self, *args, **kwargs):
@@ -138,14 +139,13 @@ class Alert(Box):
             return False
 
     def add_label(self, key, value):
-        self.labels.key = value
+        self.labels[key] = value
 
     def add_annotation(self, key, value):
-        self.annotations.key = value
+        self.annotations[key] = value
 
     def set_endtime(self, endtime):
         self.endsAt = Chronyk(endtime).datetime().isoformat("T") + "Z"
-
 
 
 if __name__ == '__main__':
