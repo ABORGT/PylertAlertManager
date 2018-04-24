@@ -24,7 +24,7 @@ import alertmanager
 
 project = 'PylerAlertManager'
 copyright = '2018, jpavlov, kamori'
-author = 'jpavlov, kamori'
+author = 'jpavlav, kamori'
 
 # The short X.Y version
 version = ''

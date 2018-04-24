@@ -5,9 +5,9 @@ import requests
 import logging
 import json
 import copy
+import maya
 
 from box import Box, BoxKeyError
-from chronyk import Chronyk
 
 
 class AlertManager(object):
@@ -145,7 +145,7 @@ class Alert(Box):
         self.annotations[key] = value
 
     def set_endtime(self, endtime):
-        self.endsAt = Chronyk(endtime).datetime().isoformat("T") + "Z"
+        self.endsAt = maya.when(endtime).rfc3339()
 
 
 if __name__ == '__main__':
