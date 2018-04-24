@@ -6,6 +6,9 @@ import logging
 import json
 import copy
 
+from box import Box, BoxKeyError
+from chronyk import Chronyk
+
 
 class AlertManager(object):
 
@@ -48,22 +51,7 @@ class AlertManager(object):
     def _make_request(self, method="GET", route="/", **kwargs):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
-
-        # We want to make use of requests built in json, it just makese sense
-        # But, they currently are not willing to allow you to provide a custom
-        # json encoder, and we don't want to use all **kwargs[data] are json
-        # So lets make some pyfu
-        # https://github.com/requests/requests/issues/2755
-        # https://github.com/python/cpython/blob/master/Lib/json/encoder.py#L413-L438
-        if kwargs.get('json'):
-            kw_json = kwargs['json']
-            if isinstance(kw_json, collections.Iterable):
-                kw_json = [dict(i) for i in kw_json]
-            elif isinstance(kw_json, object):
-                kw_json = dict(kw_json)
-
-            kwargs['json'] = kw_json
-
+        
         r = self.request_session.request(method, route, **kwargs)
         return r
 
@@ -119,41 +107,14 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
+class Alert(Box):
 
-class Alert(collections.UserDict):
+    def __init__(self, *args, **kwargs):
+        # This allows us to create keys that don't exist yet
+        # Alert().this.key.hasnt.been.made.yet = False
+        kwargs.update(default_box=True)
 
-    def __init__(self, dict_data=None):
-
-        # __data_dict is the private dict that powers data getters and setters
-        self.__data_dict = {}
-        self.data = dict_data
-
-        if not self._validate():
-            logging.warning("This Alert object doesn't validate, feel free to "
-                            "adjust but you will be blocked on POSTing")
-
-    @property
-    def data(self):
-        return self.__data_dict
-
-    @data.setter
-    def data(self, dict_data):
-        if not dict_data:
-            return
-
-        __local_data_dict = copy.deepcopy(self.__data_dict)
-        __local_data_dict.update(dict_data)
-        if not self._validate(__local_data_dict):
-            logging.warning("This Alert object doesn't validate, feel free to "
-                            "adjust but you will be blocked on POSTing")
-        else:
-            self.__data_dict.update(dict_data)
-            for key in self.alert_attributes:
-                setattr(self, key, self.data[key])
-
-    @property
-    def alert_attributes(self):
-        return self.data.keys()
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def from_dict(cls, data):
@@ -162,42 +123,28 @@ class Alert(collections.UserDict):
         except:
             pass
 
-        return cls(dict_data=data)
+        return cls(data)
 
-    def _validate(self, data=None):
-        # logic to check if the dictionary is good
-        # If data none, rely on self.data, if data is there validate that data
+    @property
+    def attributes(self):
+        return self.keys()
 
-        if self.data == "invalid":
+    def _validate(self):
+        # TODO: we need to offer a quick sanity check to our consumers
+        if True:
+            return True
+        else:
+            logging.warning('Does not validate')
             return False
 
-        return True
+    def add_label(self, key, value):
+        self.labels.key = value
 
-    def __setattr__(self, key, value, presynced=False):
-        super().__setattr__(key, value)
-        # This probably isn't efficient. But we're dealing with small amounts
-        # of data, maybe if we see large scale alert creation we may need to
-        # re-eval
-        # Userdict don't expect the dict to be managed by attributes, that
-        # is why we must implement this. Offer presynced because sometimes
-        # we may wanna bypass the extra OP
-        if not key.startswith('_') and key != 'data' and not presynced:
-            self.data[key] = value
+    def add_annotation(self, key, value):
+        self.annotations.key = value
 
-    def __setitem__(self, key, value):
-        # This probably isn't efficient. But we're dealing with small amounts
-        # of data, maybe if we see large scale alert creation we may need to
-        # re-eval
-        try:
-            getattr(self, key)
-            # Send presynced, because this call already accurately updates
-            # the underlying dict because UserDict
-            self.__setattr__(key, value, presynced=True)
-        except AttributeError:
-            # not an Alert Attribute
-            pass
-
-        super().__setitem__(key, value)
+    def set_endtime(self, endtime):
+        self.endsAt = Chronyk(endtime).datetime().isoformat("T") + "Z"
 
 
 
