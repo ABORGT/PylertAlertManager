@@ -94,7 +94,7 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
-    def post_silence(self, *alert):
+    def post_silence(self, alert):
         route = "/api/v1/silences"
         r = self._make_request("POST", route, json=alert)
         if self._check_response(r):
@@ -145,6 +145,10 @@ class Alert(Box):
         self.annotations[key] = value
 
     def set_endtime(self, endtime):
+        # Returns an RFC3339 timestamp of the UTC variety
+        # AlertManager expects rfc3339 timestamps
+        # https://prometheus.io/docs/alerting/clients/
+        # RFC3339 works best with UTC, so no override currently
         self.endsAt = maya.when(endtime).rfc3339()
 
 
