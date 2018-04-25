@@ -4,4 +4,4 @@ idna==2.6
 requests==2.18.4
 urllib3==1.22
 python-box==3.1.1
-Chronyk==1.0.1
+maya==0.3.4
