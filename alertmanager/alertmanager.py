@@ -61,7 +61,7 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
-    def post_alerts(self, *alert):
+    def post_alerts(self, alert):
         # http://10.255.238.146:9093/api/v1/alerts
         route = "/api/v1/alerts"
         r = self._make_request("POST", route, json=alert)
