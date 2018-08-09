@@ -71,12 +71,18 @@ class AlertManager(object):
 
     def get_alerts(self, **kwargs):
         route = "/api/v1/alerts"
-        print(kwargs)
+        self._validate_get_alert_kwargs(**kwargs)
         if kwargs['filter']:
             kwargs['filter'] = self._handle_filters(kwargs['filter'])
         r = self._make_request("GET", route, **kwargs)
         if self._check_response(r):
             return Alert.from_dict(r.json())
+
+    def _validate_get_alert_kwargs(self, **kwargs):
+        valid_keys = ['filter', 'silenced', 'inhibited']
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise KeyError('invalid get parameter {}'.format(key))
 
     def _handle_filters(self, filter_dict):
         if not isinstance(filter_dict, dict):
