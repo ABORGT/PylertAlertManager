@@ -6,8 +6,22 @@ import logging
 import json
 import copy
 import maya
-
+import logging
 from box import Box, BoxKeyError
+
+try:
+    import http.client as http_client
+except ImportError:
+    # Python 2
+    import httplib as http_client
+http_client.HTTPConnection.debuglevel = 1
+
+# You must initialize logging, otherwise you'll not see debug output.
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
 
 
 class AlertManager(object):
@@ -52,14 +66,28 @@ class AlertManager(object):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
 
-        r = self.request_session.request(method, route, **kwargs)
+        r = self.request_session.request(method, route, kwargs)
         return r
 
-    def get_alerts(self):
+    def get_alerts(self, **kwargs):
         route = "/api/v1/alerts"
-        r = self._make_request("GET", route)
+        print(kwargs)
+        if kwargs['filter']:
+            kwargs['filter'] = self._handle_filters(kwargs['filter'])
+        r = self._make_request("GET", route, **kwargs)
         if self._check_response(r):
             return Alert.from_dict(r.json())
+
+    def _handle_filters(self, filter_dict):
+        if not isinstance(filter_dict, dict):
+            raise TypeError('get_alerts() filter must be dict')
+        filter_list = list()
+        starter_string = '{}="{}"'
+        for key, value in filter_dict.items():
+            string = starter_string.format(key, value)
+            filter_list.append(string)
+        final_filter_string = ','.join(filter_list)
+        return '{{{}}}'.format(final_filter_string)
 
     def post_alerts(self, *alert):
         # http://10.255.238.146:9093/api/v1/alerts
