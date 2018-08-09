@@ -51,15 +51,15 @@ class AlertManager(object):
         _host = "{}:{}".format(self.hostname, self.port)
         route = urljoin(_host, route)
 
-        r = self.request_session.request(method, route, kwargs)
+        r = self.request_session.request(method, route, **kwargs)
         return r
 
     def get_alerts(self, **kwargs):
         route = "/api/v1/alerts"
         self._validate_get_alert_kwargs(**kwargs)
-        if kwargs['filter']:
+        if kwargs.get('filter'):
             kwargs['filter'] = self._handle_filters(kwargs['filter'])
-        r = self._make_request("GET", route, **kwargs)
+        r = self._make_request("GET", route, params=kwargs)
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
