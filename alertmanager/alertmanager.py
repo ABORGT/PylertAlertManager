@@ -6,7 +6,6 @@ import logging
 import json
 import copy
 import maya
-
 from box import Box, BoxKeyError
 
 
@@ -55,11 +54,31 @@ class AlertManager(object):
         r = self.request_session.request(method, route, **kwargs)
         return r
 
-    def get_alerts(self):
+    def get_alerts(self, **kwargs):
         route = "/api/v1/alerts"
-        r = self._make_request("GET", route)
+        self._validate_get_alert_kwargs(**kwargs)
+        if kwargs.get('filter'):
+            kwargs['filter'] = self._handle_filters(kwargs['filter'])
+        r = self._make_request("GET", route, params=kwargs)
         if self._check_response(r):
             return [Alert(alert) for alert in r.json()['data']]
+
+    def _validate_get_alert_kwargs(self, **kwargs):
+        valid_keys = ['filter', 'silenced', 'inhibited']
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise KeyError('invalid get parameter {}'.format(key))
+
+    def _handle_filters(self, filter_dict):
+        if not isinstance(filter_dict, dict):
+            raise TypeError('get_alerts() filter must be dict')
+        filter_list = list()
+        starter_string = '{}="{}"'
+        for key, value in filter_dict.items():
+            string = starter_string.format(key, value)
+            filter_list.append(string)
+        final_filter_string = ','.join(filter_list)
+        return '{{{}}}'.format(final_filter_string)
 
     def post_alerts(self, *alert):
         # http://10.255.238.146:9093/api/v1/alerts
