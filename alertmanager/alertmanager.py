@@ -5,6 +5,7 @@ import logging
 import json
 import maya
 from box import Box, BoxKeyError
+from .alert_objects import Alert, Silence
 
 
 class AlertManager(object):
@@ -250,8 +251,15 @@ class AlertManager(object):
             Return the response from Alert Manager as an Alert object.
 
         """
+        payload = list()
+        for obj in alert:
+            if isinstance(obj, Alert):
+                payload.append(obj.validate_and_dump())
+            else:
+                converted = Alert.from_dict(obj)
+                payload.append(converted.validate_and_dump())
         route = "/api/v1/alerts"
-        r = self._make_request("POST", route, json=alert)
+        r = self._make_request("POST", route, json=payload)
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
@@ -340,12 +348,22 @@ class AlertManager(object):
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
-    def post_silence(self, matcher):
+    def post_silence(self, silence):
         """
         Create a silence.
 
         This method can be utilized to silence alerts based on a matches found
-        by alert manager specified in the matcher parameter.
+        by alert manager specified in the matchers parameter. Minimum structure
+        for a matcher is as follows:
+        {'matchers':
+            [
+                {
+                    'name': 'label',
+                    'value': 'label_value'
+                }
+            ],
+            'endsAt': 'silence end_time'
+        }
 
         Parameters
         ----------
@@ -359,8 +377,13 @@ class AlertManager(object):
             Return the response from Alert Manager as an Alert object.
 
         """
+        if isinstance(silence, Silence):
+            silence = silence.validate_and_dump()
+        else:
+            silence = Silence.from_dict(silence)
+            silence = silence.validate_and_dump()
         route = "/api/v1/silences"
-        r = self._make_request("POST", route, json=matcher)
+        r = self._make_request("POST", route, json=silence)
         if self._check_response(r):
             return Alert.from_dict(r.json())
 
@@ -388,166 +411,3 @@ class AlertManager(object):
         r = self._make_request("DELETE", route)
         if self._check_response(r):
             return Alert.from_dict(r.json())
-
-
-class Alert(Box):
-    """
-    Class represents an Alert Manager alert.
-
-    This class returns an Alert object. Alerts could be simply be dicts passed
-    as a json payload in a request. Here, we have added some additional
-    functionality that makes the creation of alerts easier. By inheriting from
-    Box, we allow the specification of keys that do not already exist.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        """
-        Init method.
-
-        Parameters
-        ----------
-        args : list
-            Arbitrary positional arguments.
-
-        kwargs: dict
-            Arbitrary keyword arguments.
-
-        """
-        # This allows us to create keys that don't exist yet
-        # Alert().this.key.hasnt.been.made.yet = False
-        kwargs.update(default_box=True)
-
-        super().__init__(*args, **kwargs)
-
-    @classmethod
-    def from_dict(cls, data):
-        """
-        Convert a dictionary into an Alert object.
-
-        This class method takes a dictionary as an argument, loads it as json
-        and then constructs an Alert object with that data.
-
-        Parameters
-        ----------
-        data : dict
-            A dictionary representing the alert object we would like returned.
-
-
-        Returns
-        -------
-        Alert
-            Return an Alert object created from our data parameter.
-
-        """
-        try:
-            data = json.loads(data)
-        except:
-            pass
-
-        return cls(data)
-
-    @property
-    def attributes(self):
-        """
-        Alert attributes.
-
-        This property is a simple way to set the attributes of our Alert
-        object.
-
-        Returns
-        -------
-        dict_keys
-            Return a dict_keys view which contains to populate our objects
-            attributes.
-
-
-        """
-        return self.keys()
-
-    def _validate(self):
-        """ """
-        # TODO: we need to offer a quick sanity check to our consumers
-        if True:
-            return True
-        else:
-            logging.warning('Does not validate')
-            return False
-
-    def add_label(self, key, value):
-        """
-        Add a label to our Alert object.
-
-        Alert Manager alerts typically have a 'labels' key. The keys/values
-        contained within the 'labels' data structure are used by Alert Manager
-        for grouping/deduplication etc. This method allows us to easily specify
-        a new label by passing in a key, value pair.
-
-        Parameters
-        ----------
-        key : str
-            The new label's key.
-
-        value : str
-            The new label's value.
-
-
-        Returns
-        -------
-        Alert
-            Return our Alert back to us with the newly added label.
-
-        """
-        self.labels[key] = value
-
-    def add_annotation(self, key, value):
-        """
-        Add an annotation to our Alert object.
-
-        Alert Manager alerts also typically have an annotations key. The
-        keys/values specified here can be used for matching or simply
-        providing more information about the alert itself.
-
-        Parameters
-        ----------
-        key : str
-            The new annotation's key.
-
-        value : str
-            The new annotation's value.
-
-
-        Returns
-        -------
-        Alert
-            Return our Alert back to us with the newly added annotation.
-
-        """
-        self.annotations[key] = value
-
-    def set_endtime(self, endtime):
-        """
-        Set an endtime for the alert.
-
-        Alert Manager has a default configuration for the amount of time an
-        Alert will persist beyond it's firing. This method allows us to
-        specify the endsAt key with a datetime object in order to specify how
-        long our alerts should persist beyond their first firing.
-
-        Parameters
-        ----------
-        endtime : str
-            A string representation of time. EX: 'in 2 minutes'
-
-
-        Returns
-        -------
-        Alert
-            Return our Alert object back to us with a specified endsAt.
-
-        """
-        # Returns an RFC3339 timestamp of the UTC variety
-        # AlertManager expects rfc3339 timestamps
-        # https://prometheus.io/docs/alerting/clients/
-        # RFC3339 works best with UTC, so no override currently
-        self.endsAt = maya.when(endtime).rfc3339()
