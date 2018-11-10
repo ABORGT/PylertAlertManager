@@ -122,7 +122,7 @@ class AlertObject(Box):
 
         """
         if self._validate():
-            return self
+            return self.to_dict()
         else:
             raise ValueError('Object does not validate ==> {}'.format(self))
 
