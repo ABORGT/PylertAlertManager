@@ -21,7 +21,7 @@ URL = 'https://github.com/ABORGT/PylertAlertManager.git'
 EMAIL = 'kamori.goat@gmail.com'
 AUTHOR = 'Tyler Coil'
 REQUIRES_PYTHON = '>=3.4.0'
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 PACKAGES = ['alertmanager']
 REQUIRED = [
     'maya>=0.3.4',
