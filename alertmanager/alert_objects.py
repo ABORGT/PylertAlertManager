@@ -258,7 +258,7 @@ class Silence(AlertObject):
 
         """
         valid = True
-        if 'matchers' in self:
+        if 'matchers' in self and 'endsAt' in self:
             if self['matchers'] and isinstance(self['matchers'], list):
                 for matcher in self['matchers']:
                     if not matcher:
