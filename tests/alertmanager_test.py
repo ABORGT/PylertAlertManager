@@ -1,4 +1,5 @@
 import unittest
+import time
 
 from alertmanager import AlertManager
 from alertmanager import Alert
@@ -50,6 +51,8 @@ class TestAlertManagerMethods(unittest.TestCase):
         self.assertIn('success', result.status)
 
     def test_delete_silence(self):
+        self.a_manager.post_silence(self.silence)
+        time.sleep(2)
         silences = self.a_manager.get_silence()
         for silence in silences['data']:
             if silence['status']['state'] == 'active':
