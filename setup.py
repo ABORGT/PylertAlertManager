@@ -16,12 +16,16 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data
 NAME = 'pylertalertmanager'
+# TODO: This F_NAME variable is not desireable. Either we need to change 
+# The package name, or make the library inside the package match 
+# the package name
+F_NAME = 'alertmanager' # Internal folder name
 DESCRIPTION = 'Library to ease interaction with Alert Manager API.'
 URL = 'https://github.com/ABORGT/PylertAlertManager.git'
 EMAIL = 'kamori.goat@gmail.com'
 AUTHOR = 'Tyler Coil'
 REQUIRES_PYTHON = '>=3.4.0'
-VERSION = 0 # Rely on alertmanager/__version__.py
+VERSION = None # Rely on alertmanager/__version__.py
 PACKAGES = ['alertmanager']
 REQUIRED = [
     'maya>=0.3.4',
@@ -41,7 +45,7 @@ except OSError:
 
 about = {}
 if not VERSION:
-    with open(os.path.join(here, NAME, '__version__.py')) as f:
+    with open(os.path.join(here, F_NAME, '__version__.py')) as f:
         exec(f.read(), about)
 else:
     about['__version__'] = VERSION
