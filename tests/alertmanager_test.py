@@ -26,6 +26,10 @@ class TestAlertManagerMethods(unittest.TestCase):
         result = self.a_manager.get_alerts()
         self.assertTrue(result)
 
+    def test_get_silences(self):
+        result = self.a_manager.get_silences()
+        self.assertTrue(result)
+
     def test_post_alerts(self):
         result = self.a_manager.post_alerts(self.alert)
         self.assertIn('success', result.status)

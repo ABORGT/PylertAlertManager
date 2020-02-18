@@ -113,6 +113,54 @@ Here we cover some basic usage examples to get folks off and running. We are imp
         "fingerprint": "e6b119b9ce57e0c4"
     }
 ]
+
+>>> # Return a list of silences from our Alert Manager
+>>> silences = alert_manager.get_silences()
+>>> print(json.dumps(silences, indent=4))
+[
+    {
+        "id": "ed21ca94-383a-4a04-b759-ed817c8a8029",
+        "matchers": [
+            {
+                "name": "foo",
+                "value": "bar",
+                "isRegex": false
+            }
+        ],
+        "startsAt": "2020-02-18T08:56:33.5429772Z",
+        "endsAt": "2020-02-18T09:08:01.206791Z",
+        "updatedAt": "2020-02-18T09:08:01.206791Z",
+        "createdBy": "",
+        "status": {
+            "state": "expired"
+        }
+    }
+]
+
+>>> # Filter our silences by matchers
+>>> silences = alert_manager.get_silences(filter={"foo": "bar"})
+>>> print(json.dumps(silences, indent=4))
+[
+    {
+        "id": "ed21ca94-383a-4a04-b759-ed817c8a8029",
+        "matchers": [
+            {
+                "name": "foo",
+                "value": "bar",
+                "isRegex": false
+            }
+        ],
+        "startsAt": "2020-02-18T08:56:33.5429772Z",
+        "endsAt": "2020-02-18T09:08:01.206791Z",
+        "updatedAt": "2020-02-18T09:08:01.206791Z",
+        "createdBy": "",
+        "status": {
+            "state": "expired"
+        }
+    }
+]
+
+
 ```
 ## Running the tests
 
