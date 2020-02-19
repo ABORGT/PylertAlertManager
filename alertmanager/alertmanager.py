@@ -198,6 +198,35 @@ class AlertManager(object):
             if key not in valid_keys:
                 raise KeyError('invalid get parameter {}'.format(key))
 
+    def _validate_get_silence_kwargs(self, **kwargs):
+        """
+        Check kwargs for validity.
+
+        This is a protected method and should not be used outside of the
+        get_silences method. Here we verify that the kwargs we pass to filter our
+        returned silences is sane and contains keys Alert Manager knows about.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Arbitrary keyword arguments. These kwargs are used to specify
+            filters to limit the return of our list of silences to silences that
+            match our filter.
+
+
+        Raises
+        ------
+        KeyError
+            If a key in our kwargs doesn't match our list of valid_keys,
+            we raise a key error. We prevent filter keys that Alert Manager
+            doesn't understand from being passed in a request.
+
+        """
+        valid_keys = ['filter']
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise KeyError('invalid get parameter {}'.format(key))
+
     def _handle_filters(self, filter_dict):
         """
         Construct and return a filter.
@@ -221,7 +250,7 @@ class AlertManager(object):
 
         """
         if not isinstance(filter_dict, dict):
-            raise TypeError('get_alerts() filter must be dict')
+            raise TypeError('get_alerts() and get_silences() filter must be dict')
         filter_list = list()
         starter_string = '{}="{}"'
         for key, value in filter_dict.items():
@@ -347,6 +376,35 @@ class AlertManager(object):
         r = self._make_request("GET", route)
         if self._check_response(r):
             return Alert.from_dict(r.json())
+
+    def get_silences(self, **kwargs):
+        """
+        Get a list of all silences currently in Alert Manager.
+
+        This method returns a list of all silences from our Alert Manager
+        instance.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Arbitrary keyword arguments. These kwargs can be used to specify
+            filters to limit the return of our list of alerts to silences that
+            match our filter.
+
+
+        Returns
+        -------
+        list
+            Return a list of Silence objects from our Alert Manager instance.
+
+        """
+        route = "/api/v1/silences"
+        self._validate_get_silence_kwargs(**kwargs)
+        if kwargs.get('filter'):
+            kwargs['filter'] = self._handle_filters(kwargs['filter'])
+        r = self._make_request("GET", route, params=kwargs)
+        if self._check_response(r):
+            return [Alert(alert) for alert in r.json()['data']]
 
     def post_silence(self, silence):
         """
