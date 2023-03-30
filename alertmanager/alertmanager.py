@@ -372,6 +372,7 @@ class AlertManager(object):
         """
         route = "/api/v1/silences"
         if id:
+            route = "/api/v1/silence/"
             route = urljoin(route, id)
         r = self._make_request("GET", route)
         if self._check_response(r):
