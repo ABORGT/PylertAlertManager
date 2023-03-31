@@ -161,7 +161,7 @@ class AlertManager(object):
             Return a list of Alert objects from our Alert Manager instance.
 
         """
-        route = "/api/v1/alerts"
+        route = "/api/v2/alerts"
         self._validate_get_alert_kwargs(**kwargs)
         if kwargs.get('filter'):
             kwargs['filter'] = self._handle_filters(kwargs['filter'])
@@ -287,7 +287,7 @@ class AlertManager(object):
             else:
                 converted = Alert.from_dict(obj)
                 payload.append(converted.validate_and_dump())
-        route = "/api/v1/alerts"
+        route = "/api/v2/alerts"
         r = self._make_request("POST", route, json=payload)
         if self._check_response(r):
             return Alert.from_dict(r.json())
@@ -305,7 +305,7 @@ class AlertManager(object):
             Return the response from Alert Manager as an Alert object.
 
         """
-        route = "/api/v1/status"
+        route = "/api/v2/status"
         r = self._make_request("GET", route)
         if self._check_response(r):
             return Alert.from_dict(r.json())
@@ -327,7 +327,7 @@ class AlertManager(object):
             Return the response from Alert Manager as an Alert object.
 
         """
-        route = "/api/v1/receivers"
+        route = "/api/v2/receivers"
         r = self._make_request("GET", route)
         if self._check_response(r):
             return Alert.from_dict(r.json())
@@ -344,7 +344,7 @@ class AlertManager(object):
             Return the response from Alert Manager as an Alert object.
 
         """
-        route = "/api/v1/alerts/groups"
+        route = "/api/v2/alerts/groups"
         r = self._make_request("GET", route)
         if self._check_response(r):
             return Alert.from_dict(r.json())
@@ -370,9 +370,9 @@ class AlertManager(object):
             case a list of silences.
 
         """
-        route = "/api/v1/silences"
+        route = "/api/v2/silences"
         if id:
-            route = "/api/v1/silence/"
+            route = "/api/v2/silence/"
             route = urljoin(route, id)
         r = self._make_request("GET", route)
         if self._check_response(r):
@@ -399,7 +399,7 @@ class AlertManager(object):
             Return a list of Silence objects from our Alert Manager instance.
 
         """
-        route = "/api/v1/silences"
+        route = "/api/v2/silences"
         self._validate_get_silence_kwargs(**kwargs)
         if kwargs.get('filter'):
             kwargs['filter'] = self._handle_filters(kwargs['filter'])
@@ -441,7 +441,7 @@ class AlertManager(object):
         else:
             silence = Silence.from_dict(silence)
             silence = silence.validate_and_dump()
-        route = "/api/v1/silences"
+        route = "/api/v2/silences"
         r = self._make_request("POST", route, json=silence)
         if self._check_response(r):
             return Alert.from_dict(r.json())
@@ -465,7 +465,7 @@ class AlertManager(object):
             Return the response from Alert Manager as an Alert object.
 
         """
-        route = "/api/v1/silence/"
+        route = "/api/v2/silence/"
         route = urljoin(route, silence_id)
         r = self._make_request("DELETE", route)
         if self._check_response(r):
