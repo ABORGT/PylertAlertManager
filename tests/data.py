@@ -1,3 +1,10 @@
+from datetime import datetime
+import time
+
+def am_fmt(ts):
+    """ format time to AM format """
+    return datetime.utcfromtimestamp(ts).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
 TEST_ADD_MATCHER_DATA = {
     'matchers': [{'name': 'alertname', 'value': 'alert1', 'isRegex': False}],
     'endsAt': 'some_date_string'
@@ -41,5 +48,9 @@ TEST_ALERT_POST_DATA = {
 }
 
 TEST_SILENCE_POST_DATA = {
-    'matchers': [{'name': 'alertname', 'value': 'alert1', 'isRegex': False}]
+    "matchers": [{'name': 'alertname', 'value': 'alert1', 'isRegex': False}],
+    "startsAt": am_fmt(int(time.time())),
+    "endsAt": am_fmt(int(time.time()) + (60 * 60)),
+    "createdBy": "pytest",
+    "comment": "pytest"
 }
