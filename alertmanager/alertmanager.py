@@ -97,13 +97,8 @@ class AlertManager(object):
             is not in requests.codes.ok (basically not a 200).
 
         """
-        if (req.status_code == requests.codes.ok
-                and req.json()['status'] in self.SUCCESS_STATUSES):
-            return True
-        elif (req.status_code == requests.codes.ok
-                and req.json()['status'] in self.ERROR_STATUSES):
-            raise ValueError('{} ==> {}'.format(req.json()['errorType'],
-                                                req.json()['error']))
+        if req.status_code == requests.codes.ok:
+            return True        
         else:
             raise HTTPError('{} ==> {}'.format(req.status_code, req.text))
 
@@ -167,7 +162,7 @@ class AlertManager(object):
             kwargs['filter'] = self._handle_filters(kwargs['filter'])
         r = self._make_request("GET", route, params=kwargs)
         if self._check_response(r):
-            return [Alert(alert) for alert in r.json()['data']]
+            return [Alert(alert) for alert in r.json()]
 
     def _validate_get_alert_kwargs(self, **kwargs):
         """
@@ -290,7 +285,7 @@ class AlertManager(object):
         route = "/api/v2/alerts"
         r = self._make_request("POST", route, json=payload)
         if self._check_response(r):
-            return Alert.from_dict(r.json())
+            return Alert.from_dict({'status': [r.status_code]})
 
     def get_status(self):
         """
@@ -347,7 +342,7 @@ class AlertManager(object):
         route = "/api/v2/alerts/groups"
         r = self._make_request("GET", route)
         if self._check_response(r):
-            return Alert.from_dict(r.json())
+            return [Alert(group) for group in r.json()]
 
     def get_silence(self, id=None):
         """
@@ -376,7 +371,7 @@ class AlertManager(object):
             route = urljoin(route, id)
         r = self._make_request("GET", route)
         if self._check_response(r):
-            return Alert.from_dict(r.json())
+            return [Alert(silence) for silence in r.json()]
 
     def get_silences(self, **kwargs):
         """
@@ -405,7 +400,7 @@ class AlertManager(object):
             kwargs['filter'] = self._handle_filters(kwargs['filter'])
         r = self._make_request("GET", route, params=kwargs)
         if self._check_response(r):
-            return [Alert(alert) for alert in r.json()['data']]
+            return [Alert(alert) for alert in r.json()]
 
     def post_silence(self, silence):
         """
@@ -469,4 +464,4 @@ class AlertManager(object):
         route = urljoin(route, silence_id)
         r = self._make_request("DELETE", route)
         if self._check_response(r):
-            return Alert.from_dict(r.json())
+            return Alert.from_dict({'status': [r.status_code]})
