@@ -69,8 +69,7 @@ class AlertManager(object):
 
         This is a protected method that should only be used by methods making
         API calls. The intention is to check out responses for a successful
-        HTTP status code along with a successful return from the Alert Manager
-        API.
+        HTTP status code from the Alert Manager API.
 
         Parameters
         ----------
@@ -86,9 +85,6 @@ class AlertManager(object):
 
         Raises
         ------
-        ValueError
-            Raise a value error if the 'status' key of our response is in
-            our list of error statuses from Alert Manager.
         HTTPError
             Raise an http error if our response objects status_code attribute
             is not in requests.codes.ok (basically not a 200).
