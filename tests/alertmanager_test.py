@@ -32,34 +32,35 @@ class TestAlertManagerMethods(unittest.TestCase):
 
     def test_post_alerts(self):
         result = self.a_manager.post_alerts(self.alert)
-        self.assertIn('success', result.status)
+        self.assertIn(200, result.status)
 
     def test_get_status(self):
         result = self.a_manager.get_status()
-        self.assertIn('success', result.status)
+        self.assertIn('ready', result.cluster.status)
 
     def test_get_receivers(self):
         result = self.a_manager.get_status()
-        self.assertIn('success', result.status)
+        self.assertIn('ready', result.cluster.status)
 
     def test_get_alert_groups(self):
         result = self.a_manager.get_alert_groups()
-        self.assertIn('success', result.status)
+        self.assertTrue(result)
 
     def test_get_silence(self):
         result = self.a_manager.get_silence()
-        self.assertIn('success', result.status)
+        self.assertTrue(result)
 
     def test_post_silence(self):
         result = self.a_manager.post_silence(self.silence)
-        self.assertIn('success', result.status)
+        print(result)
+        self.assertTrue(result)
 
     def test_delete_silence(self):
         self.a_manager.post_silence(self.silence)
         time.sleep(2)
         silences = self.a_manager.get_silence()
-        for silence in silences['data']:
+        for silence in silences:
             if silence['status']['state'] == 'active':
                 silence_id = silence['id']
         result = self.a_manager.delete_silence(silence_id)
-        self.assertIn('success', result.status)
+        self.assertIn(200, result.status)
