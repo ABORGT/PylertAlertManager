@@ -21,9 +21,6 @@ class AlertManager(object):
 
     """
 
-    SUCCESS_STATUSES = ['success']
-    ERROR_STATUSES = ['error']
-
     def __init__(self, host, port=9093, req_obj=None):
         """
         Init method.
