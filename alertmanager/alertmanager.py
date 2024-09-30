@@ -181,7 +181,7 @@ class AlertManager(object):
             doesn't understand from being passed in a request.
 
         """
-        valid_keys = ['filter', 'silenced', 'inhibited']
+        valid_keys = ['filter', 'silenced', 'inhibited', 'receiver']
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise KeyError('invalid get parameter {}'.format(key))
@@ -232,9 +232,9 @@ class AlertManager(object):
 
         Returns
         -------
-        str
-            Returns a filter string to be passed along with our get_alerts
-            method call.
+        list
+            Returns a list of filter strings to be passed along with our
+            get_alerts method call.
 
         """
         if not isinstance(filter_dict, dict):
@@ -244,8 +244,7 @@ class AlertManager(object):
         for key, value in filter_dict.items():
             string = starter_string.format(key, value)
             filter_list.append(string)
-        final_filter_string = ','.join(filter_list)
-        return '{{{}}}'.format(final_filter_string)
+        return filter_list
 
     def post_alerts(self, *alert):
         """
