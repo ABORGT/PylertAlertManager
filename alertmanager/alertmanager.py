@@ -181,7 +181,7 @@ class AlertManager(object):
             doesn't understand from being passed in a request.
 
         """
-        valid_keys = ['filter', 'silenced', 'inhibited']
+        valid_keys = ['filter', 'silenced', 'inhibited', 'receiver']
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise KeyError('invalid get parameter {}'.format(key))
